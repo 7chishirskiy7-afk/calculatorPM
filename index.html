@@ -666,20 +666,11 @@
                 <option value="6→7">6→7</option>
                 <option value="7→8">7→8</option>
                 <option value="8→9">8→9</option>
+                <option value="9→10">9→10</option>
                 <option value="Недельный отчет">Недельный отчет</option>
             </select>
         </div>
-
-        <div id="exam-topic-group">
-            <p><b>📖 Тема экзамена:</b> <span id="topic">Отравление</span></p>
-        </div>
-
-        <div id="exam-checkbox-group" class="checkbox-group">
-            <input type="checkbox" id="exam">
-            <label for="exam" class="label-text">✅ Экзамен сдан</label>
-        </div>
-
-        <div id="penalty-group" style="margin-top:12px;">
+<div id="penalty-group" style="margin-top:12px;">
             <b>⚠️ Взыскания:</b>
             <div class="penalty-row">
                 <div class="checkbox-group">
@@ -793,11 +784,11 @@
         <textarea id="out" rows="18"></textarea>
     </div>
 
-    <div id="version">v3.5 (отчёт без смайликов, дежурства суммарно)</div>
+    <div id="version">v3.6 (обновлены нормы повышения)</div>
 
     <script>
         // ============================================================
-        //  DATA — ОБНОВЛЕННЫЕ БАЛЛЫ ДЛЯ РАНГОВ
+        //  DATA — НОРМЫ ПОВЫШЕНИЯ
         // ============================================================
         const ACTIONS = [
             { name: '☀️ ПМП день', points: 2 },
@@ -809,13 +800,14 @@
         ];
 
         const NORMS = {
-            '3→4': { points: 0, pmp: 40, vac: 0, topic: 'Отравление' },
-            '4→5': { points: 0, pmp: 60, vac: 5, topic: 'Регламент выдачи мед справок' },
-            '5→6': { points: 320, pmp: 85, vac: 10, topic: 'Кровотечение / Перелом' },
-            '6→7': { points: 400, pmp: 110, vac: 15, topic: 'Растяжение / Вывих' },
-            '7→8': { points: 480, pmp: 135, vac: 20, topic: 'Утопление' },
-            '8→9': { points: 550, pmp: 160, vac: 25, topic: 'Тепловой / Солнечный удар' },
-            'Недельный отчет': { points: 300, pmp: 0, vac: 0, topic: '—' }
+            '3→4': { points: 0, pmp: 50, vac: 0 },
+            '4→5': { points: 0, pmp: 70, vac: 5 },
+            '5→6': { points: 320, pmp: 90, vac: 10 },
+            '6→7': { points: 400, pmp: 110, vac: 15 },
+            '7→8': { points: 480, pmp: 140, vac: 20 },
+            '8→9': { points: 550, pmp: 160, vac: 25 },
+            '9→10': { points: 650, pmp: 180, vac: 30 },
+            'Недельный отчет': { points: 300, pmp: 0, vac: 0 }
         };
 
         const REMARK_BUTTONS = [
@@ -830,7 +822,6 @@
             { text: '- Скриншоты, сделанные до вашего последнего повышения, в зачет не идут', label: '📸 Скриншоты до повышения' },
             { text: '- Много ПМП выполнено с выключенной боди-камерой', label: '🎥 Без боди-камеры' },
             { text: '- Когда делаете скриншот вакцины делайте в кабинете, не выходя в коридор', label: '💉 Скриншот вне кабинета' },
-            { text: '- Прикрепите ссылку на сданный устный экзамен', label: '📚 Нет экзамена' },
             { text: '- У вас есть активное взыскание, при активном взыскании премия не дается', label: '⚠️ WARN (взыскание)' }
         ];
 
@@ -846,8 +837,6 @@
         const seniority = $('seniority');
         const joinDate = $('joinDate');
         const promo = $('promo');
-        const topic = $('topic');
-        const exam = $('exam');
         const penalty13 = $('penalty13');
         const penalty23 = $('penalty23');
         const botNotWorking = $('botNotWorking');
@@ -924,7 +913,6 @@
                 seniority: seniority.value,
                 joinDate: joinDate.value,
                 promo: promo.value,
-                exam: exam.checked,
                 penalty13: penalty13.checked,
                 penalty23: penalty23.checked,
                 botNotWorking: botNotWorking.checked,
@@ -948,7 +936,6 @@
             seniority.value = state.seniority || '';
             joinDate.value = state.joinDate || '';
             promo.value = state.promo || '3→4';
-            exam.checked = state.exam || false;
             penalty13.checked = state.penalty13 || false;
             penalty23.checked = state.penalty23 || false;
             botNotWorking.checked = state.botNotWorking || false;
@@ -967,8 +954,6 @@
                     inp.value = state.tableInputs[i] || 0;
                 });
             }
-
-            topic.textContent = NORMS[promo.value]?.topic || '—';
             toggleVisibility();
             updateAll();
         }
@@ -1132,7 +1117,6 @@
             }
 
             if (penalty13.checked || penalty23.checked) failures.push('Имеются активные взыскания');
-            if (!exam.checked) failures.push('Экзамен не сдан');
             if (hasError) failures.push('Ошибки в таблице (заявлено меньше, чем не принято)');
             if (points < norm.points) failures.push(`Недостаточно баллов (минимум ${norm.points})`);
             if (pmp < norm.pmp) failures.push(`Недостаточно ПМП (нужно ${norm.pmp})`);
@@ -1149,7 +1133,7 @@
             const result = calcResults();
             const isWeek = isWeekly();
             const failures = getFailures(result);
-            const verdictOk = failures.length === 0 && staticId.value.trim() && (isWeek ? true : exam.checked && !penalty13
+            const verdictOk = failures.length === 0 && staticId.value.trim() && (isWeek ? true : !penalty13
                 .checked && !penalty23.checked);
             const { points, pmp, vac, norm, totalBodi, duty } = result;
 
@@ -1220,11 +1204,7 @@
             } else {
                 html +=
                     `<div style="margin-bottom:16px;color:#b3d9ff;font-size:1.2rem;font-weight:500;">📈 Повышение: ${promo.value}</div>`;
-                html +=
-                    `<div class="report-category"><span class="label">📖 Тема экзамена</span><span class="value">${topic.textContent}</span></div>`;
-                html +=
-                    `<div class="report-category"><span class="label">✅ Экзамен</span><span class="value">${exam.checked ? '✅ Сдан' : '❌ Не сдан'}</span></div>`;
-                html +=
+html +=
                     `<div class="report-category"><span class="label">🤖 Бот не работает</span><span class="value">${botNotWorking.checked ? '✅ Да' : '❌ Нет'}</span></div>`;
 
                 const ptsPct = Math.min(100, norm.points ? (points / norm.points) * 100 : 0);
@@ -1288,7 +1268,7 @@
             const result = calcResults();
             const isWeek = isWeekly();
             const failures = getFailures(result);
-            const verdictOk = failures.length === 0 && staticId.value.trim() && (isWeek ? true : exam.checked && !penalty13
+            const verdictOk = failures.length === 0 && staticId.value.trim() && (isWeek ? true : !penalty13
                 .checked && !penalty23.checked);
             const { points, pmp, vac, norm, totalBodi, duty } = result;
             const rows = qsa('#tbl tbody tr');
@@ -1343,9 +1323,7 @@
                 const extraVal = +extra.value || 0;
                 if (extraVal > 0) lines.push(`> Доп. баллы: ${extraVal}`);
                 lines.push('');
-                lines.push(`### Экзамен: ${exam.checked ? 'Сдан' : 'Не сдан'} ###`);
-                lines.push(`***Тема: ${topic.textContent}***`);
-                lines.push('');
+lines.push('');
 
                 if (verdictOk) {
                     lines.push('# ОТЧЁТ ОДОБРЕН #');
@@ -1409,8 +1387,6 @@
             seniority.value = '';
             joinDate.value = '';
             promo.value = '3→4';
-            topic.textContent = NORMS['3→4'].topic;
-            exam.checked = false;
             penalty13.checked = false;
             penalty23.checked = false;
             botNotWorking.checked = false;
@@ -1445,8 +1421,6 @@
             const week = isWeekly();
             const seniorityGroup = $('seniority-group');
             const joinDateGroup = $('join-date-group');
-            const examTopic = $('exam-topic-group');
-            const examCheck = $('exam-checkbox-group');
             const penaltyGroup = $('penalty-group');
             const botGroup = $('botNotWorking-group');
             const replGrid = $('replacements-grid');
@@ -1458,9 +1432,6 @@
                 seniorityGroup.classList.add('hidden');
                 joinDateGroup.classList.add('hidden');
             }
-
-            examTopic.style.display = week ? 'none' : '';
-            examCheck.style.display = week ? 'none' : '';
             penaltyGroup.style.display = week ? 'none' : '';
             botGroup.style.display = week ? 'none' : '';
 
@@ -1481,7 +1452,6 @@
             }
 
             if (week) {
-                exam.checked = false;
                 penalty13.checked = false;
                 penalty23.checked = false;
                 botNotWorking.checked = false;
@@ -1489,8 +1459,6 @@
                 pmpToVac.value = 0;
                 promoAfterMidnight.checked = false;
             }
-
-            topic.textContent = getNorm().topic;
         }
 
         // ============================================================
@@ -1570,7 +1538,7 @@
             }
 
             const inputs = [
-                fullname, staticId, seniority, joinDate, exam, penalty13, penalty23,
+                fullname, staticId, seniority, joinDate, penalty13, penalty23,
                 botNotWorking, vacToPmp, pmpToVac, extra, remarks, promoAfterMidnight
             ];
             inputs.forEach(el => {
